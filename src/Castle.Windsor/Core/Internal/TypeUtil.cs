@@ -16,6 +16,7 @@ namespace Castle.Core.Internal
 {
 	using System;
 	using System.Diagnostics;
+	using System.Reflection;
 	using System.Text;
 
 	public static class TypeUtil
@@ -73,6 +74,9 @@ namespace Castle.Core.Internal
 		{
 			try
 			{
+                if (!openGeneric.ValidateGenericArguments(arguments))
+			        return null;
+
 				return openGeneric.MakeGenericType(arguments);
 			}
 			catch (ArgumentException)
@@ -117,7 +121,62 @@ namespace Castle.Core.Internal
 			}
 		}
 
-		private static void AppendGenericParameters(StringBuilder name, Type[] genericArguments)
+        /// <summary>
+        /// Validates the provided type arguments against the constraints on the open generic.
+        /// </summary>
+        /// <returns><c>true</c> if no constraint is [probably] violated, otherwise <c>false</c>.</returns>
+        private static bool ValidateGenericArguments(this Type openGeneric, Type[] arguments)
+        {
+            var openGenericArgs = openGeneric.GetGenericArguments();
+
+            if (openGenericArgs.Length != arguments.Length)
+                return false;
+
+            for (int i = 0; i < openGenericArgs.Length; i++)
+            {
+                var openGenericArg = openGenericArgs[i];
+                var proposedArg = arguments[i];
+
+                // Test inheritence constraints
+                foreach (var constraint in openGenericArg.GetGenericParameterConstraints())
+                {
+                    if (!constraint.IsAssignableFrom(proposedArg))
+                        return false;
+                }
+
+                // Constraints
+                var constraints = openGenericArg.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+                if (constraints != GenericParameterAttributes.None)
+                {
+                    // class
+                    if ((constraints & GenericParameterAttributes.ReferenceTypeConstraint) != 0)
+                    {
+                        if (!proposedArg.IsClass)
+                            return false;
+                    }
+
+                    // struct
+                    if ((constraints & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
+                    {
+                        if (!proposedArg.IsValueType || Nullable.GetUnderlyingType(proposedArg) != null)
+                            return false;
+                    }
+
+                    // new()
+                    if ((constraints & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
+                    {
+                        var constructorInfo = proposedArg.GetConstructor(Type.EmptyTypes);
+                        if (constructorInfo == null || !constructorInfo.IsPublic)
+                            return false;
+                    }
+                }
+
+            }
+
+            return true;
+        }
+
+	    private static void AppendGenericParameters(StringBuilder name, Type[] genericArguments)
 		{
 			name.Append("<");
 
