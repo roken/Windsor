@@ -18,10 +18,12 @@ namespace Castle.MicroKernel.Registration
 	using System.Collections.Generic;
 	using System.ComponentModel;
 	using System.Reflection;
+	using System.Runtime.CompilerServices;
 
 	/// <summary>
 	///   Describes a set of components to register in the kernel. Use static methods on the class to fluently build registration.
 	/// </summary>
+	[Obsolete("'AllTypes' has been deprecated and will be removed in future releases. Use 'Classes' static class (if you want to just register concrete classes) or 'Types' static class (if you want to register interfaces or abstract classes too) instead. It exposes exactly the same methods.")]
 	public static class AllTypes
 	{
 		/// <summary>
@@ -74,6 +76,7 @@ namespace Castle.MicroKernel.Registration
 			return Classes.FromAssemblyContaining<T>();
 		}
 
+#if !SILVERLIGHT
 		/// <summary>
 		///   Prepares to register types from assemblies found in a given directory that meet additional optional restrictions.
 		/// </summary>
@@ -83,6 +86,7 @@ namespace Castle.MicroKernel.Registration
 		{
 			return Classes.FromAssemblyInDirectory(filter);
 		}
+#endif
 
 		/// <summary>
 		///   Prepares to register types from an assembly.
@@ -98,6 +102,7 @@ namespace Castle.MicroKernel.Registration
 		///   Prepares to register types from the assembly containing the code invoking this method.
 		/// </summary>
 		/// <returns>The corresponding <see cref = "FromDescriptor" /></returns>
+		[MethodImpl(MethodImplOptions.NoInlining)]
 		public static FromAssemblyDescriptor FromThisAssembly()
 		{
 			return Classes.FromAssembly(Assembly.GetCallingAssembly());

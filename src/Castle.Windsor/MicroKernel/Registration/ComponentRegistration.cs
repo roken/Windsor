@@ -304,11 +304,11 @@ namespace Castle.MicroKernel.Registration
 		/// Uses an (anonymous) object as a dictionary, to specify custom dependencies.
 		///     <para />
 		/// </summary>
-		/// <param name = "anonymous"> The dependencies. </param>
+		/// <param name = "dependenciesAsAnonymousType"> The dependencies. </param>
 		/// <returns> </returns>
-		public ComponentRegistration<TService> DependsOn(object anonymous)
+		public ComponentRegistration<TService> DependsOn(object dependenciesAsAnonymousType)
 		{
-			return AddDescriptor(new CustomDependencyDescriptor(new ReflectionBasedDictionaryAdapter(anonymous)));
+			return AddDescriptor(new CustomDependencyDescriptor(new ReflectionBasedDictionaryAdapter(dependenciesAsAnonymousType)));
 		}
 
 		/// <summary>
@@ -1116,6 +1116,7 @@ namespace Castle.MicroKernel.Registration
 			var componentModel = kernel.ComponentModelBuilder.BuildModel(GetContributors(services));
 			if (SkipRegistration(kernel, componentModel))
 			{
+				kernel.Logger.Info("Skipping registration of " + componentModel.Name);
 				return;
 			}
 			kernel.AddCustomComponent(componentModel);
